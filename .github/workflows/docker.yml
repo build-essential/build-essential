@@ -5,7 +5,7 @@ jobs:
     name: "${{ matrix.name }}"
     strategy:
       matrix:
-        name: [Debian Stretch, Debian Buster]
+        name: [Debian Stretch, Debian Buster, Ubuntu Xenial, Ubuntu Bionic, Ubuntu Focal, Ubuntu Groovy]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -23,7 +23,7 @@ jobs:
       - name: Push image to Docker Hub
         run: |
           docker push "buildessential/$OS:$RELEASE"
-          if [ "$RELEASE" = "buster" ]; then
+          if [ "$RELEASE" = "buster" ] || [ "$RELEASE" = "focal" ]; then
             docker tag "buildessential/$OS:$RELEASE" "buildessential/$OS:latest"
             docker push "buildessential/$OS:latest"
           fi
