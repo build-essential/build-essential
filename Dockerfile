@@ -1,4 +1,5 @@
-FROM debian:buster-slim
+ARG BASE_IMAGE
+FROM $BASE_IMAGE
 
 RUN DEBIAN_FRONTEND=noninteractive apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install apt-utils -y && \
