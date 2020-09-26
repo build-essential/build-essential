@@ -2,21 +2,28 @@ name: Docker
 on: push
 jobs:
   build:
-    name: "Debian ${{ matrix.release }}"
+    name: "${{ matrix.name }}"
     strategy:
       matrix:
-        release: [stretch, buster]
+        name: [Debian Stretch, Debian Buster]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - name: Set variables
+        run: |
+          read -ra arr <<< "${{ matrix.name }}"
+          echo "::set-env name=OS::$(tr '[:upper:]' '[:lower:]' <<< "${arr[0]}")"
+          echo "::set-env name=RELEASE::$(tr '[:upper:]' '[:lower:]' <<< "${arr[1]}")"
       - name: Build image
-        run: docker build . -f Dockerfile -t "buildessential/debian:${{ matrix.release }}" --build-arg "BASE_IMAGE=debian:${{ matrix.release }}-slim"
+        run: |
+          BASE_IMAGE="$OS:$(test "$OS" = "debian" && echo "$RELEASE-slim" || echo "$RELEASE")"
+          docker build . -f Dockerfile -t "buildessential/$OS:$RELEASE" --build-arg "BASE_IMAGE=$BASE_IMAGE"
       - name: Log into Docker Hub
         run: echo "${{ secrets.DOCKER_ACCESS_TOKEN }}" | docker login --username buildessential --password-stdin
       - name: Push image to Docker Hub
         run: |
-          docker push "buildessential/debian:${{ matrix.release }}"
-          if [ "${{ matrix.release }}" = "buster" ]; then
-            docker tag "buildessential/debian:${{ matrix.release }}" "buildessential/debian:latest"
-            docker push "buildessential/debian:latest"
+          docker push "buildessential/$OS:$RELEASE"
+          if [ "$RELEASE" = "buster" ]; then
+            docker tag "buildessential/$OS:$RELEASE" "buildessential/$OS:latest"
+            docker push "buildessential/$OS:latest"
           fi
