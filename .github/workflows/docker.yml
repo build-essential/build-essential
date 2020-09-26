@@ -2,13 +2,21 @@ name: Docker
 on: push
 jobs:
   build:
-    name: Docker build
+    name: "Debian ${{ matrix.release }}"
+    strategy:
+      matrix:
+        release: [stretch, buster]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - name: Build image
-        run: docker build . -f Dockerfile -t buildessential/debian --build-arg BASE_IMAGE=debian:buster-slim
+        run: docker build . -f Dockerfile -t "buildessential/debian:${{ matrix.release }}" --build-arg "BASE_IMAGE=debian:${{ matrix.release }}-slim"
       - name: Log into Docker Hub
         run: echo "${{ secrets.DOCKER_ACCESS_TOKEN }}" | docker login --username buildessential --password-stdin
       - name: Push image to Docker Hub
-        run: docker push buildessential/debian
+        run: |
+          docker push "buildessential/debian:${{ matrix.release }}"
+          if [ "${{ matrix.release }}" = "buster" ]; then
+            docker tag "buildessential/debian:${{ matrix.release }}" "buildessential/debian:latest"
+            docker push "buildessential/debian:latest"
+          fi
