@@ -1,5 +1,8 @@
 name: Docker
-on: push
+on:
+  push:
+  schedule:
+    - cron: '41 01 * * *'
 jobs:
   build:
     name: "${{ matrix.name }}"
