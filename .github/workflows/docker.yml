@@ -18,12 +18,27 @@ jobs:
           echo "OS=$OS" >> $GITHUB_ENV
           echo "RELEASE=$RELEASE" >> $GITHUB_ENV
           echo "BASE_IMAGE=$BASE_IMAGE" >> $GITHUB_ENV
-      - name: Build image
-        run: |
-          docker build . -f Dockerfile -t "buildessential/$OS:$RELEASE" --build-arg "BASE_IMAGE=$BASE_IMAGE"
       - name: Log into Docker Hub
         run: echo "${{ secrets.DOCKER_ACCESS_TOKEN }}" | docker login --username buildessential --password-stdin
+      - name: Pull base image and existing image
+        run: |
+          docker pull "$BASE_IMAGE"
+          docker pull "buildessential/$OS:$RELEASE"
+      - name: Check if rebuild is required
+        run: |
+          REBUILD=0
+          BASE_LAYERS="$(docker image inspect --format '{{range .RootFS.Layers}}{{.}};{{end}}' "$BASE_IMAGE")"
+          EXISTING_LAYERS="$(docker image inspect --format '{{range .RootFS.Layers}}{{.}};{{end}}' "buildessential/$OS:$RELEASE")"
+          # If the latest existing image is not based on the latest base image, we need to rebuild
+          [[ "$EXISTING_LAYERS" = "$BASE_LAYERS"* ]] || REBUILD=1
+          [[ "$REBUILD" = 1 ]] && echo "Rebuild required" || echo "Rebuild not required"
+          echo "REBUILD=$REBUILD" >> $GITHUB_ENV
+      - name: Build image
+        if: ${{ env.REBUILD == 1 }}
+        run: |
+          docker build . -f Dockerfile -t "buildessential/$OS:$RELEASE" --build-arg "BASE_IMAGE=$BASE_IMAGE"
       - name: Push image to Docker Hub
+        if: ${{ env.REBUILD == 1 }}
         run: |
           docker push "buildessential/$OS:$RELEASE"
           if [ "$RELEASE" = "buster" ] || [ "$RELEASE" = "focal" ]; then
