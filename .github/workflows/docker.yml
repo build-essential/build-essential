@@ -12,9 +12,12 @@ jobs:
       - name: Set variables
         run: |
           read -ra arr <<< "${{ matrix.name }}"
-          echo "::set-env name=OS::$(tr '[:upper:]' '[:lower:]' <<< "${arr[0]}")"
-          echo "::set-env name=RELEASE::$(tr '[:upper:]' '[:lower:]' <<< "${arr[1]}")"
-          echo "::set-env name=BASE_IMAGE::$OS:$(test "$OS" = "debian" && echo "$RELEASE-slim" || echo "$RELEASE")"
+          OS="$(tr '[:upper:]' '[:lower:]' <<< "${arr[0]}")"
+          RELEASE="$(tr '[:upper:]' '[:lower:]' <<< "${arr[1]}")"
+          BASE_IMAGE="$OS:$(test "$OS" = "debian" && echo "$RELEASE-slim" || echo "$RELEASE")"
+          echo "OS=$OS" >> $GITHUB_ENV
+          echo "RELEASE=$RELEASE" >> $GITHUB_ENV
+          echo "BASE_IMAGE=$BASE_IMAGE" >> $GITHUB_ENV
       - name: Build image
         run: |
           docker build . -f Dockerfile -t "buildessential/$OS:$RELEASE" --build-arg "BASE_IMAGE=$BASE_IMAGE"
