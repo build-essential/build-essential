@@ -14,9 +14,9 @@ jobs:
           read -ra arr <<< "${{ matrix.name }}"
           echo "::set-env name=OS::$(tr '[:upper:]' '[:lower:]' <<< "${arr[0]}")"
           echo "::set-env name=RELEASE::$(tr '[:upper:]' '[:lower:]' <<< "${arr[1]}")"
+          echo "::set-env name=BASE_IMAGE::$OS:$(test "$OS" = "debian" && echo "$RELEASE-slim" || echo "$RELEASE")"
       - name: Build image
         run: |
-          BASE_IMAGE="$OS:$(test "$OS" = "debian" && echo "$RELEASE-slim" || echo "$RELEASE")"
           docker build . -f Dockerfile -t "buildessential/$OS:$RELEASE" --build-arg "BASE_IMAGE=$BASE_IMAGE"
       - name: Log into Docker Hub
         run: echo "${{ secrets.DOCKER_ACCESS_TOKEN }}" | docker login --username buildessential --password-stdin
