@@ -23,16 +23,19 @@ jobs:
           echo "BASE_IMAGE=$BASE_IMAGE" >> $GITHUB_ENV
       - name: Log into Docker Hub
         run: echo "${{ secrets.DOCKER_ACCESS_TOKEN }}" | docker login --username buildessential --password-stdin
-      - name: Check if rebuild is required
+      - name: Check if (re)build is required
         run: |
           REBUILD=0
-          docker pull "$BASE_IMAGE"
-          # If the image does not yet exist, we need to rebuild, or rather build for the first time!
-          docker pull "buildessential/$OS:$RELEASE" || REBUILD=1
-          BASE_LAYERS="$(docker image inspect --format '{{range .RootFS.Layers}}{{.}};{{end}}' "$BASE_IMAGE")"
-          EXISTING_LAYERS="$(docker image inspect --format '{{range .RootFS.Layers}}{{.}};{{end}}' "buildessential/$OS:$RELEASE")"
-          # If the latest existing image is not based on the latest base image, we need to rebuild
-          [[ "$EXISTING_LAYERS" = "$BASE_LAYERS"* ]] || REBUILD=1
+          if docker pull "buildessential/$OS:$RELEASE"; then
+            docker pull "$BASE_IMAGE"
+            BASE_LAYERS="$(docker image inspect --format '{{range .RootFS.Layers}}{{.}};{{end}}' "$BASE_IMAGE")"
+            EXISTING_LAYERS="$(docker image inspect --format '{{range .RootFS.Layers}}{{.}};{{end}}' "buildessential/$OS:$RELEASE")"
+            # If the latest existing image is not based on the latest base image, we need to rebuild
+            [[ "$EXISTING_LAYERS" = "$BASE_LAYERS"* ]] || REBUILD=1
+          else
+            # If the image does not yet exist, we need to rebuild, or rather build for the first time!
+            REBUILD=1
+          fi
           [[ "$REBUILD" = 1 ]] && echo "Rebuild required" || echo "Rebuild not required"
           echo "REBUILD=$REBUILD" >> $GITHUB_ENV
       - name: Build image
