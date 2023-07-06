@@ -8,7 +8,7 @@ jobs:
     name: "${{ matrix.name }}"
     strategy:
       matrix:
-        name: [Debian Buster, Debian Bullseye, Ubuntu Bionic, Ubuntu Focal, Ubuntu Jammy, Ubuntu Kinetic]
+        name: [Debian Buster, Debian Bullseye, Debian Bookworm, Ubuntu Focal, Ubuntu Jammy, Ubuntu Kinetic, Ubuntu Lunar]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
